@@ -1,0 +1,62 @@
+services:
+  frontend:
+    build:
+      context: ./frontend/
+    container_name: frontend_container
+    ports:
+      - "5173:3000"
+    networks:
+      - threeNW
+    env_file: "./frontend/.env"
+  
+    restart: always
+
+  backend:
+    build:
+      context: ./backend/
+    container_name: backend_container
+    ports:
+      - "5000:8000"
+    networks:
+      - threeNW
+    env_file: "./backend/.env"
+
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: always
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  
+  mongodb:
+    image: mongo:latest
+    container_name: mongo_container
+    ports:
+      - "27017:27017"
+    networks:
+      - threeNW
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin123
+      - MONGO_INITDB_DATABASE=mydb
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet","-u","admin","-p","admin123","--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+networks:
+  threeNW:
+volumes:
+  mongo-data:
+
+
